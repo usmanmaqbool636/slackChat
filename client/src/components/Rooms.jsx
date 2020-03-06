@@ -1,19 +1,28 @@
 import React from 'react';
-const Rooms =()=>{
-    return (
-        <div className="col-sm-2 rooms">
-          <h3>Rooms</h3>
-          <ul className="room-list">
-            <li onclick="joinRoom(1,2)">
-              <span className="glyphicon glyphicon-lock" />
-              Main Room
-        </li>
-            <li onclick="joinRoom(2,1)">
+const Rooms = ({ roomList }) => {
+  let nameSpace;
+  if(roomList.length){
+    nameSpace=roomList[0].namespace;    
+  }
+  const clickHandle=()=>{
+    console.log("clicked")
+  }
+  return (
+    <div className="col-sm-2 rooms">
+      <h3>{nameSpace}</h3>
+      <ul className="room-list">
+        {roomList.map(room => {
+          return (
+            <li key={`${room.roomTitle} Rooms`}
+             onClick={clickHandle}
+             >
               <span className="glyphicon glyphicon-globe" />
-              Meeting Room
+              {room.roomTitle}
         </li>
-          </ul>
-        </div>
-    )
+          )
+        })}
+      </ul>
+    </div>
+  )
 }
 export default Rooms;
