@@ -33,9 +33,28 @@ namespaces.forEach((namespace)=>{
     // const thisNs = io.of(namespace.endpoint)
     io.of(namespace.endpoint).on('connection',(nsSocket)=>{
         console.log(`${namespace.endpoint}==>>`,nsSocket.id);
+       
         nsSocket.on('sendroomdata',()=>{
             nsSocket.emit("nsRoomLoad",namespace.rooms)
         })
+
+
+        nsSocket.on("joinRoom",(roomToJoin,cb)=>{
+            console.log("room joined", roomToJoin.room);
+            nsSocket.join(roomToJoin.room,(err)=>{
+               if(err){
+                   console.log(err);
+               }
+               else{
+                   io.of(roomToJoin.namespace).in(roomToJoin.room).clients((err,clinetsList)=>{
+                       console.log(clinetsList.length);
+                       cb(clinetsList.length);
+                   })
+               }
+            })
+        })
+
+
 
 
         // console.log(nsSocket.handshake)
