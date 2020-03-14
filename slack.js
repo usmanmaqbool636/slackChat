@@ -1,61 +1,99 @@
 const express = require('express');
 const app = express();
 const socketio = require('socket.io')
-
+const cookieParser = require('cookie-parser');
 let namespaces = require('./data/namespaces');
+const cors = require('cors');
+const path = require('path')
 // console.log(namespaces[0]);
 app.use(express.static(__dirname + '/public'));
 const expressServer = app.listen(9000);
 const io = socketio(expressServer);
+app.use(cors())
+app.use(cookieParser())
+// app.get("/",async (req,res)=>{
+//     console.log(req.cookies)
+//     await res.cookie("usman maqbool","ajdshaiuofefasdfjsdfuoiehfasdfhoheoifhdskdjhfiuaeewfh")
+//     res.status(200).json({
+//         message:req.cookies
+//     })
+// })
 
+app.use(express.static(path.join(__dirname, '/client/build')))
+
+app.get('/',async(req, res) => {
+    console.log(req.cookies)
+    console.log("/asdkuajshdks")
+    // await res.cookie("usman maqbool", "ajdshaiuofefasdfjsdfuoiehfasdfhoheoifhdskdjhfiuaeewfh")
+    res.sendFile(path.join(__dirname, '/client/build/index.html'));
+});
 
 // io.on = io.of('/').on = io.sockets.on
 // io.emit = io.of('/').emit = io.sockets.emit
-io.on('connection',(socket)=>{
-    console.log(socket.id)
-    // console.log(socket.handshake)
-    // build an array to send back with the img and endpoing for each NS
-    let nsData = namespaces.map((ns)=>{
+io.on('connection', (socket) => {
+    let nsData = namespaces.map((ns) => {
         return {
             img: ns.img,
             endpoint: ns.endpoint
         }
     })
-    // sned the nsData back to the client. We need to use socket, NOT io, because we want it to 
-    // go to just this client. 
-    socket.emit('nsList',nsData);
+    socket.emit('nsList', nsData);
 })
 
 
 // loop through each namespace and listen for a connection
-namespaces.forEach((namespace)=>{
-    // console.log(`${namespace}`,namespace)
+namespaces.forEach((namespace) => {
     // const thisNs = io.of(namespace.endpoint)
-    io.of(namespace.endpoint).on('connection',(nsSocket)=>{
-        console.log(`${namespace.endpoint}==>>`,nsSocket.id);
-       
-        nsSocket.on('sendroomdata',()=>{
-            nsSocket.emit("nsRoomLoad",namespace.rooms)
+    let joinRoom;
+    io.of(namespace.endpoint).on('connection', (nsSocket) => {
+
+        nsSocket.on('sendroomdata', (data, cb) => {
+            console.log(data)
+            // cb(namespace.rooms)
+            nsSocket.emit("nsRoomLoad", namespace.rooms)
         })
 
 
-        nsSocket.on("joinRoom",(roomToJoin,cb)=>{
-            console.log("room joined", roomToJoin.room);
-            nsSocket.join(roomToJoin.room,(err)=>{
-               if(err){
-                   console.log(err);
-               }
-               else{
-                   io.of(roomToJoin.namespace).in(roomToJoin.room).clients((err,clinetsList)=>{
-                       console.log(clinetsList.length);
-                       cb(clinetsList.length);
-                   })
-               }
+        nsSocket.on("joinRoom", (roomToJoin, cb) => {
+            joinRoom = roomToJoin;
+            nsSocket.join(roomToJoin.room, (err) => {
+                if (err) {
+                }
+                else {
+                    io.of(roomToJoin.namespace).in(roomToJoin.room).clients((err, clinetsList) => {
+                        // cb(clinetsList.length);
+                        nsSocket.emit("updateroommember", clinetsList.length)
+                    })
+                }
             })
         })
+        nsSocket.on("newMessageToServer", (msg) => {
+            const fullmsg = {
+                text: msg.text,
+                time: Date.now(),
+                username: "usman",
+                avatar: "https://ui-avatars.com/api/?name=Usman+Maqbool&size=50"
+            }
+            console.log(msg)
+            console.log("==>>", nsSocket.rooms)
+            const roomTitle = Object.keys(nsSocket.rooms);
+            console.log(roomTitle[1])
+            io.of(namespace.endpoint).to(roomTitle[1]).emit('messageToClient', fullmsg);
+        })
 
 
+        nsSocket.on("disconnect", () => {
+            // console.log("nssockets disconnected",namespace)
+            nsSocket.leaveAll();
+            namespace.rooms.forEach(room => {
+                io.of(namespace.endpoint).in(room.namespace).clients((err, clinetsList) => {
+                    // cb(clinetsList.length);
+                    nsSocket.emit("updateroommember", clinetsList.length)
+                })
 
+            })
+            // console.log(namespace);
+        })
 
         // console.log(nsSocket.handshake)
         // const username = nsSocket.handshake.query.username;
@@ -79,12 +117,7 @@ namespaces.forEach((namespace)=>{
         //     })
         //     nsSocket.emit('historyCatchUp', nsRoom.history)
         //     updateUsersInRoom(namespace, roomToJoin);
-        // })
-        // nsSocket.on('newMessageToServer',(msg)=>{
-        //     const fullMsg = {
-        //         text: msg.text,
-        //         time: Date.now(),
-        //         username: username,
+        // })keyrname,
         //         avatar: 'https://via.placeholder.com/30'
         //     }
         //     // console.log(fullMsg)
@@ -107,10 +140,10 @@ namespaces.forEach((namespace)=>{
     })
 })
 
-function updateUsersInRoom(namespace, roomToJoin){
+function updateUsersInRoom(namespace, roomToJoin) {
     // Send back the number of users in this room to ALL sockets connected to this room
-    io.of(namespace.endpoint).in(roomToJoin).clients((error,clients)=>{
+    io.of(namespace.endpoint).in(roomToJoin).clients((error, clients) => {
         // console.log(`There are ${clients.length} in this room`);
-        io.of(namespace.endpoint).in(roomToJoin).emit('updateMembers',clients.length)
+        io.of(namespace.endpoint).in(roomToJoin).emit('updateMembers', clients.length)
     })
 }

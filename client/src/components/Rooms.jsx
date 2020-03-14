@@ -1,14 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { namespaceList } from '../socketio';
 const Rooms = ({ roomList, setNumofUser, setRoom }) => {
   let nameSpace;
+  console.log(roomList[0])
   if (roomList.length) {
     nameSpace = roomList[0].namespace;
   }
+
+  useEffect(() => {
+  if (roomList.length > 0) {
+    Object.keys(namespaceList).forEach(key => {
+      namespaceList[key].emit("joinRoom", { room: roomList[0].roomTitle && "", namespace: `/${nameSpace.toLowerCase()}` });
+      setRoom(roomList[0].roomTitle)
+    })
+  }
+
+  Object.keys(namespaceList).forEach(key => {
+    namespaceList[key].on("updateroommember", (newNumofMembers) => {
+      setNumofUser(newNumofMembers);
+      console.log("updateroomNumber==>>", newNumofMembers)
+    })
+  })
+  }, [])
+
   const clickHandle = (room, ns) => {
     switch (ns) {
-      case "Wiki":
-        console.log(room)
+      case "Wiki":       
         namespaceList.wiki.emit("joinRoom", { room, namespace: `/${ns.toLowerCase()}` }, (newNumofMembers) => {
           // console.log('roomjoined', 'newNumofMembers', newNumofMembers)
           setRoom(room)
@@ -36,7 +53,6 @@ const Rooms = ({ roomList, setNumofUser, setRoom }) => {
         break;
     }
   }
-  console.log(roomList)
   return (
     <div className="col-sm-2 rooms">
       <h3>{nameSpace}</h3>

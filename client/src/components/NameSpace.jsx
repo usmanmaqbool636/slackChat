@@ -1,27 +1,44 @@
 import React, { useState } from 'react';
-import { socket, namespaceList} from '../socketio';
-const NameSpace = ({setRoomList}) => {
+import { socket, namespaceList } from '../socketio';
+const NameSpace = ({ setRoomList }) => {
     const [NameSpaceList, setNameSpaceList] = useState([]);
     socket.on('nsList', (data) => {
         setNameSpaceList(data);
+        // namespaceList.wiki.emit("sendroomdata", {});
     })
     const clickHandler = (endpoint) => {
+        // console.log("click",endpoint)
         switch (endpoint) {
             case "/wiki":
-                namespaceList.wiki.emit("sendroomdata", {});
+                console.log("click", endpoint)
+                namespaceList.wiki.emit("sendroomdata",{});
+                // namespaceList.wiki.emit("sendroomdata", {}, (data) => {
+                //     setRoomList(data);
+                //     console.log("data=>", data);
+                // });
+                namespaceList.linux.close();
+                namespaceList.mozilla.close();
                 break;
             case "/mozilla":
-                namespaceList.mozilla.emit("sendroomdata", {});
+                console.log("click", endpoint)
+
+                namespaceList.mozilla.emit("sendroomdata",{});
+                namespaceList.linux.close();
+                namespaceList.wiki.close();
                 break;
             case "/linux":
-                namespaceList.linux.emit("sendroomdata", {});
+                console.log("click", endpoint)
+
+                namespaceList.linux.emit("sendroomdata",{});
+                namespaceList.wiki.close();
+                namespaceList.mozilla.close();
                 break;
             default:
                 break;
         }
 
     }
-    Object.keys(namespaceList).forEach(nameSpace=>{
+    Object.keys(namespaceList).forEach(nameSpace => {
         namespaceList[nameSpace].on('nsRoomLoad', (rooms) => {
             setRoomList(rooms);
         })

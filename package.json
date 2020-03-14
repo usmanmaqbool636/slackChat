@@ -6,14 +6,18 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "client": "cd client && npm start",
-    "server":"nodemon slack.js",
-    "dev":"concurrently --kill-others \" npm run server\" \" npm run client\"",
+    "server": "nodemon slack.js",
+    "dev": "concurrently --kill-others \" npm run server\" \" npm run client\"",
     "start": "node server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.19.2",
+    "cookie-parser": "^1.4.4",
+    "cors": "^2.8.5",
     "express": "^4.16.4",
+    "react-cookie": "^4.0.3",
     "socket.io": "^2.1.1"
   }
 }
